@@ -1,26 +1,29 @@
-use std::str::FromStr;
+use std::path::Path;
 
 mod parser;
 mod types;
 
-pub use types::{PackageSpec, PackageArgError, VersionReq};
+pub use types::{PackageArgError, PackageSpec, VersionReq};
 
 impl PackageSpec {
-    // TODO: Add where :\
-    pub fn from_string<S: AsRef<str>>(s: S) -> Result<PackageSpec, PackageArgError> {
-        parser::parse_package_spec(&s.as_ref())
+    pub fn from_string(
+        s: impl AsRef<str>,
+        dir: impl AsRef<Path>,
+    ) -> Result<PackageSpec, PackageArgError> {
+        parser::parse_package_spec(&s.as_ref(), dir.as_ref())
     }
 
-    pub fn resolve<N, S>(name: N, spec: S) -> Result<PackageSpec, PackageArgError>
+    pub fn resolve<N, S, D>(name: N, spec: S, dir: D) -> Result<PackageSpec, PackageArgError>
     where
         N: AsRef<str>,
         S: AsRef<str>,
+        D: AsRef<Path>,
     {
         let mut arg = String::new();
         arg.push_str(name.as_ref());
         arg.push_str("@");
         arg.push_str(spec.as_ref());
-        parser::parse_package_spec(&arg)
+        parser::parse_package_spec(&arg, dir.as_ref())
     }
 
     pub fn validate_name<S: AsRef<str>>(name: S) -> Result<String, PackageArgError> {
@@ -34,13 +37,5 @@ impl PackageSpec {
             PackageSpec::Dir { .. } => false,
             PackageSpec::Npm { .. } => true,
         }
-    }
-}
-
-impl FromStr for PackageSpec {
-    type Err = PackageArgError;
-
-    fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
-        PackageSpec::from_string(s)
     }
 }

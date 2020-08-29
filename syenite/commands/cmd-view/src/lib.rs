@@ -28,8 +28,8 @@ pub struct ViewCmd {
 #[async_trait]
 impl OroCommand for ViewCmd {
     async fn execute(self) -> Result<()> {
-        let pkgreq = Rogga::new(&self.registry, std::env::current_dir()?)
-            .arg_request(&self.pkg)
+        let pkgreq = Rogga::new(&self.registry)
+            .arg_request(&self.pkg, std::env::current_dir()?)
             .await?;
         let packument = pkgreq.packument().await?;
         let pkg = pkgreq.resolve_with(&ClassicResolver::new()).await?;

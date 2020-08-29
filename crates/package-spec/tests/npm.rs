@@ -1,10 +1,10 @@
 use oro_node_semver::{Version as SemVerVersion, VersionReq as SemVerVersionReq};
-use package_spec::{PackageSpec, PackageArgError, VersionReq};
+use package_spec::{PackageArgError, PackageSpec, VersionReq};
 
 type Result<T> = std::result::Result<T, PackageArgError>;
 
 fn ppa(input: &str) -> Result<PackageSpec> {
-    input.parse()
+    PackageSpec::from_string(input, "/root/")
 }
 
 fn version_req(input: &str) -> Option<VersionReq> {

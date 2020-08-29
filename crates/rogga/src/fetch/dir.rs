@@ -1,5 +1,5 @@
 use std::collections::HashMap;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 
 use async_trait::async_trait;
 use futures::io::AsyncRead;
@@ -8,9 +8,8 @@ use oro_manifest::OroManifestBuilder;
 use package_spec::PackageSpec;
 use serde::{Deserialize, Serialize};
 
-use super::PackageFetcher;
-
 use crate::error::{Error, Internal, Result};
+use crate::fetch::PackageFetcher;
 use crate::package::{Package, PackageRequest};
 use crate::packument::{Dist, Packument, VersionMetadata};
 
@@ -18,22 +17,18 @@ use oro_node_semver::Version;
 
 pub struct DirFetcher {
     name: Option<String>,
-    dir: PathBuf,
 }
 
 impl DirFetcher {
-    pub fn new(dir: impl AsRef<Path>) -> Self {
-        Self {
-            name: None,
-            dir: PathBuf::from(dir.as_ref()),
-        }
+    pub fn new() -> Self {
+        Self { name: None }
     }
 }
 
 impl DirFetcher {
     async fn packument_from_spec(&mut self, spec: &PackageSpec) -> Result<Packument> {
         let path = match spec {
-            PackageSpec::Dir { path, .. } => self.dir.join(path),
+            PackageSpec::Dir { path, from } => from.join(path),
             _ => panic!("There shouldn't be anything but Dirs here"),
         };
         // TODO: Orogene.toml?
@@ -53,7 +48,7 @@ impl PackageFetcher for DirFetcher {
     async fn name(&mut self, spec: &PackageSpec) -> Result<String> {
         if let Some(ref name) = self.name {
             Ok(name.clone())
-        } else if let PackageSpec::Dir { ref path } = spec {
+        } else if let PackageSpec::Dir { ref path, ref from } = spec {
             self.name = Some(
                 self.packument_from_spec(spec)
                     .await?
@@ -66,7 +61,9 @@ impl PackageFetcher for DirFetcher {
                     .clone()
                     .name
                     .unwrap_or_else(|| {
-                        if let Some(name) = path.file_name() {
+                        let canon = from.join(path).canonicalize();
+                        let path = canon.as_ref().map(|p| p.file_name());
+                        if let Ok(Some(name)) = path {
                             name.to_string_lossy().into()
                         } else {
                             "".into()

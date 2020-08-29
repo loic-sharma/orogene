@@ -1,11 +1,11 @@
 use std::path::PathBuf;
 
-use package_spec::{PackageSpec, PackageArgError};
+use package_spec::{PackageArgError, PackageSpec};
 
 type Result<T> = std::result::Result<T, PackageArgError>;
 
 fn ppa(input: &str) -> Result<PackageSpec> {
-    input.parse()
+    PackageSpec::from_string(input, "/root/")
 }
 
 #[test]
@@ -14,7 +14,8 @@ fn relative_path_current_dir() -> Result<()> {
     assert_eq!(
         res,
         PackageSpec::Dir {
-            path: PathBuf::from("./")
+            path: PathBuf::from("./"),
+            from: PathBuf::from("/root/")
         }
     );
     Ok(())
@@ -26,7 +27,8 @@ fn relative_path_current_dir_no_slash() -> Result<()> {
     assert_eq!(
         res,
         PackageSpec::Dir {
-            path: PathBuf::from(".")
+            path: PathBuf::from("."),
+            from: PathBuf::from("/root/")
         }
     );
     Ok(())
@@ -38,7 +40,8 @@ fn relative_path_unix() -> Result<()> {
     assert_eq!(
         res,
         PackageSpec::Dir {
-            path: PathBuf::from("./foo/bar/baz")
+            path: PathBuf::from("./foo/bar/baz"),
+            from: PathBuf::from("/root/"),
         }
     );
     Ok(())
@@ -50,7 +53,8 @@ fn absolute_path_unix() -> Result<()> {
     assert_eq!(
         res,
         PackageSpec::Dir {
-            path: PathBuf::from("/foo/bar/baz")
+            path: PathBuf::from("/foo/bar/baz"),
+            from: PathBuf::from("/root/"),
         }
     );
     Ok(())
@@ -62,7 +66,8 @@ fn relative_path_windows() -> Result<()> {
     assert_eq!(
         res,
         PackageSpec::Dir {
-            path: PathBuf::from(".\\foo\\bar\\baz")
+            path: PathBuf::from(".\\foo\\bar\\baz"),
+            from: PathBuf::from("/root/"),
         }
     );
     Ok(())
@@ -74,7 +79,8 @@ fn absolute_path_windows() -> Result<()> {
     assert_eq!(
         res,
         PackageSpec::Dir {
-            path: PathBuf::from("C:\\foo\\bar\\baz")
+            path: PathBuf::from("C:\\foo\\bar\\baz"),
+            from: PathBuf::from("/root/"),
         }
     );
     Ok(())
@@ -86,7 +92,8 @@ fn absolute_path_windows_qmark() -> Result<()> {
     assert_eq!(
         res,
         PackageSpec::Dir {
-            path: PathBuf::from("\\\\?\\foo\\bar\\baz")
+            path: PathBuf::from("\\\\?\\foo\\bar\\baz"),
+            from: PathBuf::from("/root/"),
         }
     );
     Ok(())
@@ -98,7 +105,8 @@ fn absolute_path_windows_double_slash() -> Result<()> {
     assert_eq!(
         res,
         PackageSpec::Dir {
-            path: PathBuf::from("\\\\foo\\bar\\baz")
+            path: PathBuf::from("\\\\foo\\bar\\baz"),
+            from: PathBuf::from("/root/"),
         }
     );
     Ok(())
@@ -119,7 +127,8 @@ fn named() -> Result<()> {
         PackageSpec::Alias {
             name: "foo".into(),
             package: Box::new(PackageSpec::Dir {
-                path: PathBuf::from("./hey")
+                path: PathBuf::from("./hey"),
+                from: PathBuf::from("/root/"),
             })
         }
     );

@@ -22,7 +22,6 @@ pub use packument::*;
 #[derive(Default)]
 pub struct RoggaOpts {
     cache: Option<PathBuf>,
-    dir: Option<PathBuf>,
     registry: Option<String>,
 }
 
@@ -33,11 +32,6 @@ impl RoggaOpts {
 
     pub fn cache(mut self, cache: impl AsRef<Path>) -> Self {
         self.cache = Some(PathBuf::from(cache.as_ref()));
-        self
-    }
-
-    pub fn dir(mut self, dir: impl AsRef<Path>) -> Self {
-        self.cache = Some(PathBuf::from(dir.as_ref()));
         self
     }
 
@@ -52,7 +46,6 @@ impl RoggaOpts {
             .unwrap_or_else(|| "https://registry.npmjs.org".into());
         Rogga {
             // cache: self.cache,
-            dir: self.dir.unwrap_or_else(|| PathBuf::from("")),
             client: Arc::new(Mutex::new(OroClient::new(reg))),
         }
     }
@@ -62,21 +55,21 @@ impl RoggaOpts {
 pub struct Rogga {
     client: Arc<Mutex<OroClient>>,
     // cache: Option<PathBuf>,
-    dir: PathBuf,
 }
 
 impl Rogga {
     /// Creates a new Rogga instance.
-    pub fn new(registry: impl AsRef<str>, dir: impl AsRef<Path>) -> Self {
-        RoggaOpts::new()
-            .dir(dir.as_ref())
-            .registry(registry.as_ref())
-            .build()
+    pub fn new(registry: impl AsRef<str>) -> Self {
+        RoggaOpts::new().registry(registry.as_ref()).build()
     }
 
     /// Creates a PackageRequest from a plain string spec, i.e. `foo@1.2.3`.
-    pub async fn arg_request<T: AsRef<str>>(&self, arg: T) -> Result<PackageRequest> {
-        let spec = PackageSpec::from_string(arg.as_ref())?;
+    pub async fn arg_request(
+        &self,
+        arg: impl AsRef<str>,
+        dir: impl AsRef<Path>,
+    ) -> Result<PackageRequest> {
+        let spec = PackageSpec::from_string(arg.as_ref(), dir.as_ref())?;
         let fetcher = self.pick_fetcher(&spec);
         let name = {
             let mut locked = fetcher.write().await;
@@ -91,12 +84,13 @@ impl Rogga {
 
     /// Creates a PackageRequest from a two-part dependency declaration, such
     /// as `dependencies` entries in a `package.json`.
-    pub fn dep_request<T: AsRef<str>, U: AsRef<str>>(
+    pub fn dep_request(
         &self,
-        name: T,
-        spec: U,
+        name: impl AsRef<str>,
+        spec: impl AsRef<str>,
+        dir: impl AsRef<Path>,
     ) -> Result<PackageRequest> {
-        let spec = PackageSpec::resolve(name.as_ref(), spec.as_ref())?;
+        let spec = PackageSpec::resolve(name.as_ref(), spec.as_ref(), dir.as_ref())?;
         let fetcher = self.pick_fetcher(&spec);
         Ok(PackageRequest {
             name: name.as_ref().into(),
@@ -110,9 +104,7 @@ impl Rogga {
     fn pick_fetcher(&self, arg: &PackageSpec) -> RwLock<Box<dyn PackageFetcher>> {
         use PackageSpec::*;
         match *arg {
-            // TODO: self.dir is a thing we should probably be getting
-            // earlier? Dir.path should always be absolute, I think.
-            Dir { .. } => RwLock::new(Box::new(DirFetcher::new(&self.dir))),
+            Dir { .. } => RwLock::new(Box::new(DirFetcher::new())),
             Alias { ref package, .. } => self.pick_fetcher(package),
             Npm { .. } => RwLock::new(Box::new(RegistryFetcher::new(self.client.clone()))),
         }

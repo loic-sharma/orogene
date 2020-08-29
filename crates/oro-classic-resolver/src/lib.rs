@@ -42,8 +42,13 @@ impl PackageResolver for ClassicResolver {
             spec => spec,
         };
 
-        if let Dir { ref path } = spec {
-            return Ok(PackageResolution::Dir { path: path.clone() });
+        if let Dir { ref path, ref from } = spec {
+            return Ok(PackageResolution::Dir {
+                path: from
+                    .join(path)
+                    .canonicalize()
+                    .map_err(|e| ResolverError::OtherError(Box::new(e)))?,
+            });
         }
 
         // TODO, move a lot of this out into a generic "PackumentResolver"

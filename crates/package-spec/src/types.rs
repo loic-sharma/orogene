@@ -25,6 +25,7 @@ pub enum VersionReq {
 pub enum PackageSpec {
     Dir {
         path: PathBuf,
+        from: PathBuf,
     },
     Alias {
         name: String,

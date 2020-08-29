@@ -5,9 +5,8 @@ use http_types::Method;
 use oro_client::{self, OroClient};
 use package_spec::PackageSpec;
 
-use super::PackageFetcher;
-
 use crate::error::{Error, Internal, Result};
+use crate::fetch::PackageFetcher;
 use crate::package::{Package, PackageRequest, PackageResolution};
 use crate::packument::{Packument, VersionMetadata};
 
