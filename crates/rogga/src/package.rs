@@ -5,7 +5,7 @@ use async_trait::async_trait;
 use futures::io::AsyncRead;
 use http_types::Url;
 use oro_node_semver::Version;
-use package_arg::PackageArg;
+use package_spec::PackageSpec;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
@@ -16,12 +16,12 @@ use crate::packument::{Packument, VersionMetadata};
 /// A package request from which more information can be derived. PackageRequest objects can be resolved into a `Package` by using a `PackageResolver`
 pub struct PackageRequest {
     pub(crate) name: String,
-    pub(crate) spec: PackageArg,
+    pub(crate) spec: PackageSpec,
     pub(crate) fetcher: RwLock<Box<dyn PackageFetcher>>,
 }
 
 impl PackageRequest {
-    pub fn spec(&self) -> &PackageArg {
+    pub fn spec(&self) -> &PackageSpec {
         &self.spec
     }
 
@@ -77,7 +77,7 @@ pub enum PackageResolution {
 /// A resolved package. A concrete version has been determined from its
 /// PackageArg by the version resolver.
 pub struct Package {
-    pub from: PackageArg,
+    pub from: PackageSpec,
     pub name: String,
     pub resolved: PackageResolution,
     pub(crate) fetcher: RwLock<Box<dyn PackageFetcher>>,

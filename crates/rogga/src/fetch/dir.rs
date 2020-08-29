@@ -5,7 +5,7 @@ use async_trait::async_trait;
 use futures::io::AsyncRead;
 use http_types::Url;
 use oro_manifest::OroManifestBuilder;
-use package_arg::PackageArg;
+use package_spec::PackageSpec;
 use serde::{Deserialize, Serialize};
 
 use super::PackageFetcher;
@@ -31,9 +31,9 @@ impl DirFetcher {
 }
 
 impl DirFetcher {
-    async fn packument_from_spec(&mut self, spec: &PackageArg) -> Result<Packument> {
+    async fn packument_from_spec(&mut self, spec: &PackageSpec) -> Result<Packument> {
         let path = match spec {
-            PackageArg::Dir { path, .. } => self.dir.join(path),
+            PackageSpec::Dir { path, .. } => self.dir.join(path),
             _ => panic!("There shouldn't be anything but Dirs here"),
         };
         // TODO: Orogene.toml?
@@ -50,10 +50,10 @@ impl DirFetcher {
 
 #[async_trait]
 impl PackageFetcher for DirFetcher {
-    async fn name(&mut self, spec: &PackageArg) -> Result<String> {
+    async fn name(&mut self, spec: &PackageSpec) -> Result<String> {
         if let Some(ref name) = self.name {
             Ok(name.clone())
-        } else if let PackageArg::Dir { ref path } = spec {
+        } else if let PackageSpec::Dir { ref path } = spec {
             self.name = Some(
                 self.packument_from_spec(spec)
                     .await?

@@ -22,13 +22,13 @@ pub enum VersionReq {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum PackageArg {
+pub enum PackageSpec {
     Dir {
         path: PathBuf,
     },
     Alias {
         name: String,
-        package: Box<PackageArg>,
+        package: Box<PackageSpec>,
     },
     Npm {
         scope: Option<String>,

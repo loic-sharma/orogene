@@ -1,6 +1,6 @@
 use async_trait::async_trait;
 use oro_node_semver::{Version as SemVerVersion, VersionReq as SemVerRange};
-use package_arg::{PackageArg, VersionReq};
+use package_spec::{PackageSpec, VersionReq};
 use rogga::{PackageRequest, PackageResolution, PackageResolver, ResolverError};
 use thiserror::Error;
 
@@ -36,7 +36,7 @@ impl ClassicResolver {
 #[async_trait]
 impl PackageResolver for ClassicResolver {
     async fn resolve(&self, wanted: &PackageRequest) -> Result<PackageResolution, ResolverError> {
-        use PackageArg::*;
+        use PackageSpec::*;
         let spec = match wanted.spec() {
             Alias { package, .. } => &*package,
             spec => spec,
@@ -47,7 +47,7 @@ impl PackageResolver for ClassicResolver {
         }
 
         // TODO, move a lot of this out into a generic "PackumentResolver"
-        // that takes a package_arg::VersionReq and an existing packument,
+        // that takes a package_spec::VersionReq and an existing packument,
         // since it's going to apply to a set of resolvers, but not to all of
         // them.
         let packument = wanted
@@ -90,10 +90,10 @@ impl PackageResolver for ClassicResolver {
                 .get(tag_version.as_ref().unwrap())
                 .is_some()
             && match spec {
-                PackageArg::Npm {
+                PackageSpec::Npm {
                     requested: None, ..
                 } => true,
-                PackageArg::Npm {
+                PackageSpec::Npm {
                     requested: Some(VersionReq::Range(range)),
                     ..
                 } => range.satisfies(tag_version.as_ref().unwrap()),

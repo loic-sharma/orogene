@@ -1,10 +1,10 @@
 use std::path::PathBuf;
 
-use package_arg::{PackageArg, PackageArgError};
+use package_spec::{PackageSpec, PackageArgError};
 
 type Result<T> = std::result::Result<T, PackageArgError>;
 
-fn ppa(input: &str) -> Result<PackageArg> {
+fn ppa(input: &str) -> Result<PackageSpec> {
     input.parse()
 }
 
@@ -13,7 +13,7 @@ fn relative_path_current_dir() -> Result<()> {
     let res = ppa("./")?;
     assert_eq!(
         res,
-        PackageArg::Dir {
+        PackageSpec::Dir {
             path: PathBuf::from("./")
         }
     );
@@ -25,7 +25,7 @@ fn relative_path_current_dir_no_slash() -> Result<()> {
     let res = ppa(".")?;
     assert_eq!(
         res,
-        PackageArg::Dir {
+        PackageSpec::Dir {
             path: PathBuf::from(".")
         }
     );
@@ -37,7 +37,7 @@ fn relative_path_unix() -> Result<()> {
     let res = ppa("./foo/bar/baz")?;
     assert_eq!(
         res,
-        PackageArg::Dir {
+        PackageSpec::Dir {
             path: PathBuf::from("./foo/bar/baz")
         }
     );
@@ -49,7 +49,7 @@ fn absolute_path_unix() -> Result<()> {
     let res = ppa("/foo/bar/baz")?;
     assert_eq!(
         res,
-        PackageArg::Dir {
+        PackageSpec::Dir {
             path: PathBuf::from("/foo/bar/baz")
         }
     );
@@ -61,7 +61,7 @@ fn relative_path_windows() -> Result<()> {
     let res = ppa(".\\foo\\bar\\baz")?;
     assert_eq!(
         res,
-        PackageArg::Dir {
+        PackageSpec::Dir {
             path: PathBuf::from(".\\foo\\bar\\baz")
         }
     );
@@ -73,7 +73,7 @@ fn absolute_path_windows() -> Result<()> {
     let res = ppa("C:\\foo\\bar\\baz")?;
     assert_eq!(
         res,
-        PackageArg::Dir {
+        PackageSpec::Dir {
             path: PathBuf::from("C:\\foo\\bar\\baz")
         }
     );
@@ -85,7 +85,7 @@ fn absolute_path_windows_qmark() -> Result<()> {
     let res = ppa("\\\\?\\foo\\bar\\baz")?;
     assert_eq!(
         res,
-        PackageArg::Dir {
+        PackageSpec::Dir {
             path: PathBuf::from("\\\\?\\foo\\bar\\baz")
         }
     );
@@ -97,7 +97,7 @@ fn absolute_path_windows_double_slash() -> Result<()> {
     let res = ppa("\\\\foo\\bar\\baz")?;
     assert_eq!(
         res,
-        PackageArg::Dir {
+        PackageSpec::Dir {
             path: PathBuf::from("\\\\foo\\bar\\baz")
         }
     );
@@ -116,9 +116,9 @@ fn named() -> Result<()> {
     let res = ppa("foo@./hey")?;
     assert_eq!(
         res,
-        PackageArg::Alias {
+        PackageSpec::Alias {
             name: "foo".into(),
-            package: Box::new(PackageArg::Dir {
+            package: Box::new(PackageSpec::Dir {
                 path: PathBuf::from("./hey")
             })
         }

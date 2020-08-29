@@ -3,7 +3,7 @@ use async_trait::async_trait;
 use futures::io::AsyncRead;
 use http_types::Method;
 use oro_client::{self, OroClient};
-use package_arg::PackageArg;
+use package_spec::PackageSpec;
 
 use super::PackageFetcher;
 
@@ -49,9 +49,9 @@ impl RegistryFetcher {
 
 #[async_trait]
 impl PackageFetcher for RegistryFetcher {
-    async fn name(&mut self, spec: &PackageArg) -> Result<String> {
+    async fn name(&mut self, spec: &PackageSpec) -> Result<String> {
         match spec {
-            PackageArg::Npm { ref name, .. } | PackageArg::Alias { ref name, .. } => {
+            PackageSpec::Npm { ref name, .. } | PackageSpec::Alias { ref name, .. } => {
                 Ok(name.clone())
             }
             _ => unreachable!(),
@@ -79,11 +79,11 @@ impl PackageFetcher for RegistryFetcher {
         // When fetching the packument itself, we need the _package_ name, not
         // its alias! Hence these shenanigans.
         let pkg = match pkg.spec() {
-            PackageArg::Alias { ref package, .. } => package,
-            pkg @ PackageArg::Npm { .. } => pkg,
+            PackageSpec::Alias { ref package, .. } => package,
+            pkg @ PackageSpec::Npm { .. } => pkg,
             _ => unreachable!(),
         };
-        if let PackageArg::Npm { ref name, .. } = pkg {
+        if let PackageSpec::Npm { ref name, .. } = pkg {
             Ok(self.packument_from_name(name).await?.clone())
         } else {
             unreachable!()

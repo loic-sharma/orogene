@@ -8,7 +8,7 @@ use clap::Clap;
 use oro_command::OroCommand;
 use oro_config::OroConfigLayer;
 use oro_tree::{self, Package, PkgLock};
-use rogga::{PackageArg, PackageRequest, PackageResolution, PackageResolver, ResolverError, Rogga};
+use rogga::{PackageSpec, PackageRequest, PackageResolution, PackageResolver, ResolverError, Rogga};
 use url::Url;
 
 #[derive(Debug, Clap, OroConfigLayer)]
@@ -40,7 +40,7 @@ impl<'a> PackageResolver for PkgLockResolver<'a> {
         wanted: &PackageRequest,
     ) -> std::result::Result<PackageResolution, ResolverError> {
         Ok(match wanted.spec() {
-            PackageArg::Npm { .. } => {
+            PackageSpec::Npm { .. } => {
                 PackageResolution::Npm {
                     version: self
                         .dep
@@ -51,7 +51,7 @@ impl<'a> PackageResolver for PkgLockResolver<'a> {
                     tarball: self.dep.resolved.clone().unwrap(),
                 }
             }
-            PackageArg::Dir { .. } => PackageResolution::Dir {
+            PackageSpec::Dir { .. } => PackageResolution::Dir {
                 path: self
                     .dep
                     .version

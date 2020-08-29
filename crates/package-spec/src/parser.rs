@@ -13,7 +13,7 @@ use nom::multi::{many0, many1};
 use nom::sequence::{delimited, preceded, tuple};
 use nom::{Err, IResult};
 
-use crate::types::{PackageArg, PackageArgError, VersionReq};
+use crate::types::{PackageSpec, PackageArgError, VersionReq};
 
 const JS_ENCODED: &AsciiSet = {
     &NON_ALPHANUMERIC
@@ -28,9 +28,9 @@ const JS_ENCODED: &AsciiSet = {
         .remove(b')')
 };
 
-pub fn parse_package_arg<I: AsRef<str>>(input: I) -> Result<PackageArg, PackageArgError> {
+pub fn parse_package_spec<I: AsRef<str>>(input: I) -> Result<PackageSpec, PackageArgError> {
     let input = &input.as_ref()[..];
-    match all_consuming(package_arg::<VerboseError<&str>>)(input) {
+    match all_consuming(package_spec::<VerboseError<&str>>)(input) {
         Ok((_, arg)) => Ok(arg),
         Err(err) => Err(PackageArgError::ParseError(ErrCode::OR1000 {
             input: input.into(),
@@ -44,7 +44,7 @@ pub fn parse_package_arg<I: AsRef<str>>(input: I) -> Result<PackageArg, PackageA
 }
 
 /// package-arg := alias | ( [ "npm:" ] npm-pkg ) | ( [ "ent:" ] ent-pkg ) | ( [ "file:" ] path )
-fn package_arg<'a, E>(input: &'a str) -> IResult<&'a str, PackageArg, E>
+fn package_spec<'a, E>(input: &'a str) -> IResult<&'a str, PackageSpec, E>
 where
     E: ParseError<&'a str>,
 {
@@ -59,7 +59,7 @@ where
 }
 
 /// prefixed_package-arg := ( "npm:" npm-pkg ) | ( [ "file:" ] path )
-fn prefixed_package_arg<'a, E>(input: &'a str) -> IResult<&'a str, PackageArg, E>
+fn prefixed_package_spec<'a, E>(input: &'a str) -> IResult<&'a str, PackageSpec, E>
 where
     E: ParseError<&'a str>,
 {
@@ -74,7 +74,7 @@ where
 }
 
 // alias := [ [ '@' ], not('/')+ '/' ] not('@/')+ '@' prefixed-package-arg
-fn alias<'a, E>(input: &'a str) -> IResult<&'a str, PackageArg, E>
+fn alias<'a, E>(input: &'a str) -> IResult<&'a str, PackageSpec, E>
 where
     E: ParseError<&'a str>,
 {
@@ -85,7 +85,7 @@ where
                 opt(scope),
                 map_res(take_till1(|c| c == '@' || c == '/'), no_url_encode),
                 tag("@"),
-                prefixed_package_arg,
+                prefixed_package_spec,
             )),
             |(scope, name, _, arg)| {
                 let mut fullname = String::new();
@@ -94,7 +94,7 @@ where
                     fullname.push_str("/");
                 }
                 fullname.push_str(name);
-                PackageArg::Alias {
+                PackageSpec::Alias {
                     name: fullname,
                     package: Box::new(arg),
                 }
@@ -128,7 +128,7 @@ where
 }
 
 /// npm-pkg := [ '@' not('/')+ '/' ] not('@/')+ [ '@' version-req ]
-fn npm_pkg<'a, E>(input: &'a str) -> IResult<&'a str, PackageArg, E>
+fn npm_pkg<'a, E>(input: &'a str) -> IResult<&'a str, PackageSpec, E>
 where
     E: ParseError<&'a str>,
 {
@@ -144,7 +144,7 @@ where
                 map_res(take_till1(|x| x == '@' || x == '/'), no_url_encode),
                 opt(preceded(tag("@"), cut(version_req))),
             )),
-            |(scope_opt, name, req)| PackageArg::Npm {
+            |(scope_opt, name, req)| PackageSpec::Npm {
                 scope: scope_opt.map(|x| x.into()),
                 name: name.into(),
                 requested: req,
@@ -200,11 +200,11 @@ fn no_url_encode(tag: &str) -> Result<&str, PackageArgError> {
 }
 
 /// path := ( relative-dir | absolute-dir )
-fn path<'a, E>(input: &'a str) -> IResult<&'a str, PackageArg, E>
+fn path<'a, E>(input: &'a str) -> IResult<&'a str, PackageSpec, E>
 where
     E: ParseError<&'a str>,
 {
-    map(alt((relative_path, absolute_path)), |p| PackageArg::Dir {
+    map(alt((relative_path, absolute_path)), |p| PackageSpec::Dir {
         path: p,
     })(input)
 }
